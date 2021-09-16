@@ -29,16 +29,8 @@ client.on("message", msg => {
   }
 
   if(msg.content.startsWith(prefix)) {
-    const serverQueue = queue.get(msg.guild.id);
-
     if (msg.content.startsWith(`${prefix}play`)) {
-        execute(msg, serverQueue);
-        return;
-    } else if (msg.content.startsWith(`${prefix}skip`)) {
-        skip(msg, serverQueue);
-        return;
-    } else if (msg.content.startsWith(`${prefix}stop`)) {
-        stop(msg, serverQueue);
+        play(msg);
         return;
     } else {
         msg.channel.send("Invalid Command!");
@@ -59,7 +51,7 @@ function isPermitted(user) {
 }
 
 // check if user is in vc and has permissions
-async function execute(message, serverQueue) {
+async function play(message) {
   const args = message.content.split(" ");
   const voiceChannel = message.member.voice.channel;
 
@@ -75,10 +67,6 @@ async function execute(message, serverQueue) {
       url: songInfo.videoDetails.video_url,
   };
 
-  play(guild, song)
-}
-
-function play(guild, song) {
   const stream = ytdl(song.url, { filter: 'audioonly' });
   const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
   const player = createAudioPlayer();
@@ -87,27 +75,4 @@ function play(guild, song) {
   connection.subscribe(player);
 
   player.on(AudioPlayerStatus.Idle, () => connection.destroy());
-}
-
-function skip(message, serverQueue) {
-  if (!message.member.voice.channel)
-    return message.channel.send(
-      "You have to be in a voice channel to stop the music!"
-    );
-  if (!serverQueue)
-    return message.channel.send("There is no song that I could skip!");
-  serverQueue.connection.dispatcher.end();
-}
-
-function stop(message, serverQueue) {
-  if (!message.member.voice.channel)
-    return message.channel.send(
-      "You have to be in a voice channel to stop the music!"
-    );
-
-  if (!serverQueue)
-    return message.channel.send("There is no song that I could stop!");
-
-  serverQueue.songs = [];
-  serverQueue.connection.dispatcher.end();
 }
