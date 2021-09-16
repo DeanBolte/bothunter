@@ -7,11 +7,21 @@ client.on("ready", () => {
 });
 
 client.on("message", msg => {
-  if (msg.content === "@everyone") {
-    
-
-    msg.reply("Unpermitted use of everyone command, user muted.");
+  if (msg.content.search("@everyone") >= 0) {
+    if(!isPermitted(msg.member)) {
+      msg.reply("?mute " + msg.member.user.tag + " 1h unpermitted use of everyone command");
+    }
   }
 });
 
 client.login(process.env.TOKEN);
+
+// check if the user is allowed to use the @everyone command
+function isPermitted(user) {
+  let permitted = false;
+  if(user.permissions.has("MENTION_EVERYONE")) {
+    permitted = true
+  }
+
+  return permitted;
+}
