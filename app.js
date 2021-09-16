@@ -9,8 +9,7 @@ client.on("ready", () => {
 client.on("message", msg => {
   if (msg.content.search("@everyone") >= 0) {
     if(!isPermitted(msg.member)) {
-      msg.reply("?mute " + msg.member.user.tag + " 1h unpermitted use of everyone command");
-      msg.reply("?purge " + msg.member.user.tag + " 1");
+      msg.reply("no.");
     }
   }
 });
