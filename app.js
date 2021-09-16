@@ -1,7 +1,8 @@
 const Discord = require("discord.js");
 const ytdl = require('ytdl-core');
 require('dotenv').config();
-const client = new Discord.Client({ intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES] });
+const { Client, Intents } = require('discord.js');
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES] });
 const {
 	AudioPlayerStatus,
 	StreamType,
@@ -60,18 +61,13 @@ function isPermitted(user) {
 // check if user is in vc and has permissions
 async function execute(message, serverQueue) {
   const args = message.content.split(" ");
-
   const voiceChannel = message.member.voice.channel;
-  if (!voiceChannel)
-    return message.channel.send(
-      "You need to be in a voice channel to play music!"
-    );
-  const permissions = voiceChannel.permissionsFor(message.client.user);
-  if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
-    return message.channel.send(
-      "I need the permissions to join and speak in your voice channel!"
-    );
-  }
+
+  const connection = joinVoiceChannel({
+	channelId: voiceChannel.id,
+	guildId: voiceChannel.guild.id,
+	adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+  });
 
   const songInfo = await ytdl.getInfo(args[1]);
   const song = {
@@ -79,61 +75,18 @@ async function execute(message, serverQueue) {
       url: songInfo.videoDetails.video_url,
   };
 
-  if (!serverQueue) {
-    // Creating the contract for our queue
-    const queueContruct = {
-       textChannel: message.channel,
-       voiceChannel: voiceChannel,
-       connection: null,
-       songs: [],
-       volume: 5,
-       playing: true,
-    };
-    // Setting the queue using our contract
-    queue.set(message.guild.id, queueContruct);
-    // Pushing the song to our songs array
-    queueContruct.songs.push(song);
-
-    try {
-      // Here we try to join the voicechat and save our connection into our object.
-      const connection = await joinVoiceChannel({
-         channelId: voiceChannel.id,
-         guildId: voiceChannel.guild.id,
-         adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-      });
-       queueContruct.connection = connection;
-       // Calling the play function to start a song
-       play(message.guild, queueContruct.songs[0]);
-    } catch (err) {
-       // Printing the error message if the bot fails to join the voicechat
-       console.log(err);
-       queue.delete(message.guild.id);
-       return message.channel.send(err);
-    }
-  }else {
-     serverQueue.songs.push(song);
-     console.log(serverQueue.songs);
-     return message.channel.send(`${song.title} has been added to the queue!`);
-  }
+  play(guild, song)
 }
 
 function play(guild, song) {
-  const serverQueue = queue.get(guild.id);
-  if (!song) {
-    serverQueue.voiceChannel.leave();
-    queue.delete(guild.id);
-    return;
-  }
+  const stream = ytdl(song.url, { filter: 'audioonly' });
+  const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
+  const player = createAudioPlayer();
 
-  const dispatcher = serverQueue.connection
-    .playStream(ytdl(song.url))
-    .on("end", () => {
-        serverQueue.songs.shift();
-        play(guild, serverQueue.songs[0]);
-    })
-    .on("error", error => console.error(error));
-  dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-  serverQueue.textChannel.send(`Start playing: **${song.title}**`);
+  player.play(resource);
+  connection.subscribe(player);
+
+  player.on(AudioPlayerStatus.Idle, () => connection.destroy());
 }
 
 function skip(message, serverQueue) {
