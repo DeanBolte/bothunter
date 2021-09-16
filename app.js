@@ -1,8 +1,10 @@
 const Discord = require("discord.js");
 const ytdl = require('ytdl-core');
 require('dotenv').config();
+
 const { Client, Intents } = require('discord.js');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES] });
+
 const {
 	AudioPlayerStatus,
 	StreamType,
@@ -11,14 +13,12 @@ const {
 	joinVoiceChannel,
 } = require('@discordjs/voice');
 
-const queue = new Map();
-
 const {
 	prefix
 } = require('./config.json');
 
 client.on("ready", () => {
-  console.log('Bot is ready');
+  console.log('Bot is online');
 });
 
 client.on("messageCreate", msg => {
