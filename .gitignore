@@ -1,0 +1,5 @@
+# do not store bot token on github
+.env
+
+# do not store node_modules
+node_modules/
