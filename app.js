@@ -21,7 +21,7 @@ client.on("ready", () => {
   console.log('Bot is ready');
 });
 
-client.on("message", msg => {
+client.on("messageCreate", msg => {
   if (msg.content.search("@everyone") >= 0) {
     if(!isPermitted(msg.member)) {
       msg.reply("no.");
