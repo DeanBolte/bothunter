@@ -41,6 +41,7 @@ client.on("messageCreate", msg => {
 client.login(process.env.TOKEN);
 
 async function play(message, songQueue) {
+  // get user input
   const args = message.content.split(" ");
   const voiceChannel = message.member.voice.channel;
 
@@ -56,25 +57,30 @@ async function play(message, songQueue) {
     );
   }
 
+  // connect to voice channel
   const connection = joinVoiceChannel({
 	channelId: voiceChannel.id,
 	guildId: voiceChannel.guild.id,
 	adapterCreator: voiceChannel.guild.voiceAdapterCreator,
   });
 
+  // grab song info from YouTube
   const songInfo = await ytdl.getInfo(args[1]);
   const song = {
       title: songInfo.videoDetails.title,
       url: songInfo.videoDetails.video_url,
   };
 
+  // create resources for music player
   const stream = ytdl(song.url, { filter: 'audioonly' });
   const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
   const player = createAudioPlayer();
 
+  // start playing the song and connect to the output
   player.play(resource);
   connection.subscribe(player);
 
+  // on music ending
   player.on(AudioPlayerStatus.Idle, () => {
     connection.destroy();
   });
