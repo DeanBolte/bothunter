@@ -17,16 +17,14 @@ const {
 	prefix
 } = require('./config.json');
 
+let playing = false;
+
 client.on("ready", () => {
   console.log('Bot is online');
 });
 
 client.on("messageCreate", msg => {
-  if (msg.content.search("@everyone") >= 0) {
-    if(!isPermitted(msg.member)) {
-      msg.reply("no.");
-    }
-  }
+  const songQueue = queue.get(msg.guild.id);
 
   if(msg.content.startsWith(prefix)) {
     if (msg.content.startsWith(`${prefix}play`)
@@ -40,16 +38,6 @@ client.on("messageCreate", msg => {
 });
 
 client.login(process.env.TOKEN);
-
-// check if the user is allowed to use the @everyone command
-function isPermitted(user) {
-  let permitted = false;
-  if(user.permissions.has("MENTION_EVERYONE")) {
-    permitted = true
-  }
-
-  return permitted;
-}
 
 // check if user is in vc and has permissions
 async function play(message) {
@@ -75,5 +63,7 @@ async function play(message) {
   player.play(resource);
   connection.subscribe(player);
 
-  player.on(AudioPlayerStatus.Idle, () => connection.destroy());
+  player.on(AudioPlayerStatus.Idle, () => {
+    connection.destroy();
+  });
 }
