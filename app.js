@@ -31,6 +31,10 @@ client.on("messageCreate", msg => {
     || msg.content.startsWith(`${prefix}p`)) {
       handleSong(msg, songQueue);
       return;
+    } else if (msg.content.startsWith(`${prefix}next`)
+    || msg.content.startsWith(`${prefix}n`)) {
+      next(msg, songQueue);
+      return;
     } else {
         msg.channel.send("Invalid Command!");
     }
@@ -124,4 +128,16 @@ function play(guild, song) {
     songQueue.songs.shift();
     play(guild, songQueue.songs[0]);
   });
+}
+
+function next(message, songQueue) {
+  if (!message.member.voice.channel)
+    return message.channel.send(
+      "You have to be in a voice channel to stop the music!"
+    );
+  if (!songQueue) {
+    return message.channel.send("There is no song that I could skip!");
+  }
+  songQueue.songs.shift();
+  play(message.guild, songQueue.songs[0]);
 }
