@@ -37,11 +37,7 @@ client.on("messageCreate", msg => {
       return;
     } else if (msg.content.startsWith(`${prefix}stop`)
     || msg.content.startsWith(`${prefix}s`)) {
-      next(msg, songQueue);
-      return;
-    } else if (msg.content.startsWith(`${prefix}pause`)
-    || msg.content.startsWith(`${prefix}p`)) {
-      next(msg, songQueue);
+      stop(msg, songQueue);
       return;
     } else if (msg.content.startsWith(`${prefix}help`)) {
       sendHelp(msg);
@@ -116,7 +112,6 @@ function play(guild, song) {
 
   // leave if there is no song to play
   if (!song) {
-    songQueue.voiceChannel.leave();
     songQueue.connection.destroy();
     queue.delete(guild.id);
     return;
@@ -151,10 +146,16 @@ function next(message, songQueue) {
   play(message.guild, songQueue.songs[0]);
 }
 
+function stop(message, songQueue) {
+  songQueue.connection.destroy();
+  queue.delete(message.guild.id);
+}
+
 function sendHelp(message) {
   message.channel.send(
     "Here is a list of working commands: \n" +
     "play (p) [youtube url]: plays or queues a song \n" +
-    "next (n): skips the current song \n"
+    "next (n): skips the current song \n" +
+    "stop (p) [youtube url]: plays or queues a song \n"
   )
 }
