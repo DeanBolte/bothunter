@@ -40,7 +40,9 @@ client.on("messageCreate", msg => {
   if (msg.content.startsWith(prefix)) {
     if (msg.content.startsWith(`${prefix}play`)
       || msg.content.startsWith(`${prefix}p`)) {
-      handleSong(msg, songQueue);
+      if(msg.content.search(" ") >= 0) {
+        handleSong(msg, songQueue);
+      }
       return;
     } else if (msg.content.startsWith(`${prefix}next`)
       || msg.content.startsWith(`${prefix}n`)) {
@@ -64,6 +66,7 @@ client.login(process.env.TOKEN);
 async function handleSong(message, songQueue) {
   // get user input
   const args = message.content.split(" ");
+  const searchParam = message.content.substr(message.content.search(" "));
   const voiceChannel = message.member.voice.channel;
 
   // check if user is in vc and has permissions
@@ -90,7 +93,7 @@ async function handleSong(message, songQueue) {
       "snippet"
     ],
     "maxResults": 1,
-    "q": args[1],
+    "q": searchParam,
     "safeSearch": "none"
   });
   const raw = response.data.items[0].snippet.thumbnails.default.url;
