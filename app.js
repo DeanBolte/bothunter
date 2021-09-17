@@ -6,15 +6,15 @@ const { Client, Intents } = require('discord.js');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES] });
 
 const {
-	AudioPlayerStatus,
-	StreamType,
-	createAudioPlayer,
-	createAudioResource,
-	joinVoiceChannel,
+  AudioPlayerStatus,
+  StreamType,
+  createAudioPlayer,
+  createAudioResource,
+  joinVoiceChannel,
 } = require('@discordjs/voice');
 
 const {
-	prefix
+  prefix
 } = require('./config.json');
 
 const queue = new Map();
@@ -26,26 +26,25 @@ client.on("ready", () => {
 client.on("messageCreate", msg => {
   const songQueue = queue.get(msg.guild.id);
 
-  if(msg.content.startsWith(prefix)) {
+  if (msg.content.startsWith(prefix)) {
     if (msg.content.startsWith(`${prefix}play`)
-    || msg.content.startsWith(`${prefix}p`)) {
+      || msg.content.startsWith(`${prefix}p`)) {
       handleSong(msg, songQueue);
       return;
     } else if (msg.content.startsWith(`${prefix}next`)
-    || msg.content.startsWith(`${prefix}n`)) {
+      || msg.content.startsWith(`${prefix}n`)) {
       next(msg, songQueue);
       return;
-    } else if (msg.content.startsWith(`${prefix}stop`)
-    || msg.content.startsWith(`${prefix}s`)) {
+    } else if (msg.content.startsWith(`${prefix}stop`)) {
       stop(msg, songQueue);
-      return;
-    } else if (msg.content.startsWith(`${prefix}help`)) {
-      sendHelp(msg);
       return;
     } else if (msg.content.startsWith(`${prefix}song`)) {
       showSong(msg, songQueue);
       return;
-    } 
+    } else if (msg.content.startsWith(`${prefix}help`)) {
+      sendHelp(msg);
+      return;
+    }
   }
 });
 
@@ -70,16 +69,16 @@ async function handleSong(message, songQueue) {
 
   // connect to voice channel
   const connection = joinVoiceChannel({
-	channelId: voiceChannel.id,
-	guildId: voiceChannel.guild.id,
-	adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+    channelId: voiceChannel.id,
+    guildId: voiceChannel.guild.id,
+    adapterCreator: voiceChannel.guild.voiceAdapterCreator,
   });
 
   // grab song info from YouTube
   const songInfo = await ytdl.getInfo(args[1]);
   const song = {
-      title: songInfo.videoDetails.title,
-      url: songInfo.videoDetails.video_url,
+    title: songInfo.videoDetails.title,
+    url: songInfo.videoDetails.video_url,
   };
 
   // add song to queue or start playing
@@ -97,15 +96,15 @@ async function handleSong(message, songQueue) {
     queue.set(message.guild.id, queueContruct);
     // Pushing the song to our songs array
     queueContruct.songs.push(song);
-    
+
     // save our connection into our object.
     queueContruct.connection = connection;
     // Calling the play function to start a song
     play(message.guild, queueContruct.songs[0]);
-  }else {
+  } else {
     songQueue.songs.push(song);
-   console.log(songQueue.songs);
-   return message.channel.send(`Now queueing: **${song.title}**`);
+    console.log(songQueue.songs);
+    return message.channel.send(`Now queueing: **${song.title}**`);
   }
 }
 
@@ -167,8 +166,8 @@ function sendHelp(message) {
     "Here is a list of working commands (use . as a prefix): \n" +
     "**play (p) [youtube url]:** plays or queues a song. \n" +
     "**next (n):** skips the current song. \n" +
-    "**stop (s):** plays or queues a song. \n" + 
-    "**song (s):** plays or queues a song. \n" + 
+    "**stop:** plays or queues a song. \n" +
+    "**song:** plays or queues a song. \n" +
     "**help:** list of working commands."
   );
 }
