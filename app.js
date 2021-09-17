@@ -35,9 +35,18 @@ client.on("messageCreate", msg => {
     || msg.content.startsWith(`${prefix}n`)) {
       next(msg, songQueue);
       return;
-    } else {
-        msg.channel.send("Invalid Command!");
-    }
+    } else if (msg.content.startsWith(`${prefix}stop`)
+    || msg.content.startsWith(`${prefix}s`)) {
+      next(msg, songQueue);
+      return;
+    } else if (msg.content.startsWith(`${prefix}pause`)
+    || msg.content.startsWith(`${prefix}p`)) {
+      next(msg, songQueue);
+      return;
+    } else if (msg.content.startsWith(`${prefix}help`)) {
+      sendHelp(msg);
+      return;
+    } 
   }
 });
 
@@ -140,4 +149,12 @@ function next(message, songQueue) {
   }
   songQueue.songs.shift();
   play(message.guild, songQueue.songs[0]);
+}
+
+function sendHelp(message) {
+  message.channel.send(
+    "Here is a list of working commands: \n" +
+    "play (p) [youtube url]: plays or queues a song \n" +
+    "next (n): skips the current song \n"
+  )
 }
