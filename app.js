@@ -29,7 +29,8 @@ client.on("messageCreate", msg => {
   }
 
   if(msg.content.startsWith(prefix)) {
-    if (msg.content.startsWith(`${prefix}play`)) {
+    if (msg.content.startsWith(`${prefix}play`)
+    || msg.content.startsWith(`${prefix}p`)) {
         play(msg);
         return;
     } else {
