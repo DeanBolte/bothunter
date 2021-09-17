@@ -18,6 +18,7 @@ const {
 } = require('./config.json');
 
 let playing = false;
+const queue = new Map();
 
 client.on("ready", () => {
   console.log('Bot is online');
@@ -29,7 +30,7 @@ client.on("messageCreate", msg => {
   if(msg.content.startsWith(prefix)) {
     if (msg.content.startsWith(`${prefix}play`)
     || msg.content.startsWith(`${prefix}p`)) {
-        play(msg);
+        play(msg, songQueue);
         return;
     } else {
         msg.channel.send("Invalid Command!");
@@ -39,10 +40,21 @@ client.on("messageCreate", msg => {
 
 client.login(process.env.TOKEN);
 
-// check if user is in vc and has permissions
-async function play(message) {
+async function play(message, songQueue) {
   const args = message.content.split(" ");
   const voiceChannel = message.member.voice.channel;
+
+  // check if user is in vc and has permissions
+  if (!voiceChannel)
+    return message.channel.send(
+      "Please be in a vc so that i can play music."
+    );
+  const permissions = voiceChannel.permissionsFor(message.client.user);
+  if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
+    return message.channel.send(
+      "I am missing permissions to join the vc."
+    );
+  }
 
   const connection = joinVoiceChannel({
 	channelId: voiceChannel.id,
