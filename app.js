@@ -17,6 +17,17 @@ const {
   prefix
 } = require('./config.json');
 
+
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+if (!YOUTUBE_API_KEY) {
+  throw new Error("No API key is provided");
+}
+const {google} = require("googleapis");
+const youtube = google.youtube({
+  version: 'v3',
+  auth: YOUTUBE_API_KEY
+});
+
 const queue = new Map();
 
 client.on("ready", () => {
@@ -73,9 +84,22 @@ async function handleSong(message, songQueue) {
     guildId: voiceChannel.guild.id,
     adapterCreator: voiceChannel.guild.voiceAdapterCreator,
   });
+  
+  const response = await youtube.search.list({
+    "part": [
+      "snippet"
+    ],
+    "maxResults": 1,
+    "q": args[1],
+    "safeSearch": "none"
+  });
+  const raw = response.data.items[0].snippet.thumbnails.default.url;
+  const data = raw.substring(raw.search("/vi/") + 4, raw.search("/default"));
+  const url = "https://www.youtube.com/watch?v=" + data
+  console.log(url);
 
   // grab song info from YouTube
-  const songInfo = await ytdl.getInfo(args[1]);
+  const songInfo = await ytdl.getInfo(url);
   const song = {
     title: songInfo.videoDetails.title,
     url: songInfo.videoDetails.video_url,
