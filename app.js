@@ -17,7 +17,6 @@ const {
 	prefix
 } = require('./config.json');
 
-let playing = false;
 const queue = new Map();
 
 client.on("ready", () => {
@@ -30,8 +29,8 @@ client.on("messageCreate", msg => {
   if(msg.content.startsWith(prefix)) {
     if (msg.content.startsWith(`${prefix}play`)
     || msg.content.startsWith(`${prefix}p`)) {
-        play(msg, songQueue);
-        return;
+      handleSong(msg, songQueue);
+      return;
     } else {
         msg.channel.send("Invalid Command!");
     }
@@ -40,7 +39,7 @@ client.on("messageCreate", msg => {
 
 client.login(process.env.TOKEN);
 
-async function play(message, songQueue) {
+async function handleSong(message, songQueue) {
   // get user input
   const args = message.content.split(" ");
   const voiceChannel = message.member.voice.channel;
@@ -71,6 +70,45 @@ async function play(message, songQueue) {
       url: songInfo.videoDetails.video_url,
   };
 
+  // add song to queue or start playing
+  if (!songQueue) {
+    // Creating the contract for our queue
+    const queueContruct = {
+      textChannel: message.channel,
+      voiceChannel: voiceChannel,
+      connection: null,
+      songs: [],
+      volume: 5,
+      playing: true,
+    };
+    // Setting the queue using our contract
+    queue.set(message.guild.id, queueContruct);
+    // Pushing the song to our songs array
+    queueContruct.songs.push(song);
+    
+    // save our connection into our object.
+    queueContruct.connection = connection;
+    // Calling the play function to start a song
+    play(message.guild, queueContruct.songs[0]);
+  }else {
+    songQueue.songs.push(song);
+   console.log(songQueue.songs);
+   return message.channel.send(`${song.title} has been added to the queue!`);
+  }
+}
+
+function play(guild, song) {
+  // get queue
+  const songQueue = queue.get(guild.id);
+
+  // leave if there is no song to play
+  if (!song) {
+    songQueue.voiceChannel.leave();
+    songQueue.connection.destroy();
+    queue.delete(guild.id);
+    return;
+  }
+
   // create resources for music player
   const stream = ytdl(song.url, { filter: 'audioonly' });
   const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
@@ -78,10 +116,12 @@ async function play(message, songQueue) {
 
   // start playing the song and connect to the output
   player.play(resource);
-  connection.subscribe(player);
+  songQueue.connection.subscribe(player)
+  songQueue.textChannel.send(`Start playing: **${song.title}**`);
 
   // on music ending
   player.on(AudioPlayerStatus.Idle, () => {
-    connection.destroy();
+    songQueue.songs.shift();
+    play(guild, songQueue.songs[0]);
   });
 }
