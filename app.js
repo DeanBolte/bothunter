@@ -102,7 +102,7 @@ async function handleSong(message, songQueue) {
   }else {
     songQueue.songs.push(song);
    console.log(songQueue.songs);
-   return message.channel.send(`${song.title} has been added to the queue!`);
+   return message.channel.send(`Now queueing: **${song.title}**`);
   }
 }
 
@@ -125,7 +125,7 @@ function play(guild, song) {
   // start playing the song and connect to the output
   player.play(resource);
   songQueue.connection.subscribe(player)
-  songQueue.textChannel.send(`Start playing: **${song.title}**`);
+  songQueue.textChannel.send(`Now playing: **${song.title}**`);
 
   // on music ending
   player.on(AudioPlayerStatus.Idle, () => {
@@ -135,27 +135,25 @@ function play(guild, song) {
 }
 
 function next(message, songQueue) {
-  if (!message.member.voice.channel)
-    return message.channel.send(
-      "You have to be in a voice channel to stop the music!"
-    );
   if (!songQueue) {
-    return message.channel.send("There is no song that I could skip!");
+    return message.channel.send("There is nothing in the queue.");
   }
   songQueue.songs.shift();
   play(message.guild, songQueue.songs[0]);
 }
 
 function stop(message, songQueue) {
+  message.channel.send("Ending music session...");
   songQueue.connection.destroy();
   queue.delete(message.guild.id);
 }
 
 function sendHelp(message) {
   message.channel.send(
-    "Here is a list of working commands: \n" +
-    "play (p) [youtube url]: plays or queues a song \n" +
-    "next (n): skips the current song \n" +
-    "stop (p) [youtube url]: plays or queues a song \n"
+    "Here is a list of working commands (use . as a prefix): \n" +
+    "*play (p) [youtube url]*: plays or queues a song. \n" +
+    "*next (n)*: skips the current song. \n" +
+    "*stop (s)*: plays or queues a song. \n" + 
+    "*help*: list of working commands."
   )
 }
