@@ -42,6 +42,9 @@ client.on("messageCreate", msg => {
     } else if (msg.content.startsWith(`${prefix}help`)) {
       sendHelp(msg);
       return;
+    } else if (msg.content.startsWith(`${prefix}song`)) {
+      showSong(msg, songQueue);
+      return;
     } 
   }
 });
@@ -148,12 +151,24 @@ function stop(message, songQueue) {
   queue.delete(message.guild.id);
 }
 
+// show current song
+function showSong(message, songQueue) {
+  if (!songQueue) {
+    return message.channel.send("There is nothing in the queue.");
+  }
+
+  message.channel.send(
+    `Currently playing: **${songQueue.songs[0].title}**`
+  );
+}
+
 function sendHelp(message) {
   message.channel.send(
     "Here is a list of working commands (use . as a prefix): \n" +
-    "*play (p) [youtube url]*: plays or queues a song. \n" +
-    "*next (n)*: skips the current song. \n" +
-    "*stop (s)*: plays or queues a song. \n" + 
-    "*help*: list of working commands."
-  )
+    "**play (p) [youtube url]:** plays or queues a song. \n" +
+    "**next (n):** skips the current song. \n" +
+    "**stop (s):** plays or queues a song. \n" + 
+    "**song (s):** plays or queues a song. \n" + 
+    "**help:** list of working commands."
+  );
 }
