@@ -238,8 +238,8 @@ function sendHelp(message) {
     "Here is a list of working commands (use . as a prefix): \n" +
     "**play (p) [youtube url]:** plays or queues a song. \n" +
     "**next (n):** skips the current song. \n" +
-    "**stop:** plays or queues a song. \n" +
-    "**song:** plays or queues a song. \n" +
+    "**stop:** stops the music. \n" +
+    "**song:** shows some info on the current song. \n" +
     "**help:** list of working commands."
   );
 }
