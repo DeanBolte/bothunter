@@ -67,6 +67,7 @@ async function handleSong(message, songQueue) {
   // get user input
   const args = message.content.split(" ");
   const searchParam = message.content.substr(message.content.search(" "));
+  console.log("searching for: " + searchParam + "...\n");
   const voiceChannel = message.member.voice.channel;
 
   // check if user is in vc and has permissions
@@ -81,24 +82,24 @@ async function handleSong(message, songQueue) {
     );
   }
 
-  // connect to voice channel
-  const connection = joinVoiceChannel({
-    channelId: voiceChannel.id,
-    guildId: voiceChannel.guild.id,
-    adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-  });
-  
-  const response = await youtube.search.list({
-    "part": [
-      "snippet"
-    ],
-    "maxResults": 1,
-    "q": searchParam,
-    "safeSearch": "none"
-  });
-  const raw = response.data.items[0].snippet.thumbnails.default.url;
-  const data = raw.substring(raw.search("/vi/") + 4, raw.search("/default"));
-  const url = "https://www.youtube.com/watch?v=" + data;
+  let url = null;
+  try {
+    const response = await youtube.search.list({
+      "part": [
+        "snippet"
+      ],
+      "maxResults": 1,
+      "q": searchParam,
+      "safeSearch": "none"
+    });
+    const raw = response.data.items[0].snippet.thumbnails.default.url;
+    const data = raw.substring(raw.search("/vi/") + 4, raw.search("/default"));
+    url = "https://www.youtube.com/watch?v=" + data;
+  } catch(err) {
+    console.log(err);
+    return;
+  }
+  console.log("Found: " + url + "\n");
 
   // grab song info from YouTube
   const songInfo = await ytdl.getInfo(url);
@@ -126,13 +127,23 @@ async function handleSong(message, songQueue) {
     // Pushing the song to our songs array
     queueContruct.songs.push(song);
 
-    // save our connection into our object.
-    queueContruct.connection = connection;
-    // Calling the play function to start a song
-    play(message.guild, queueContruct.songs[0]);
+    try {
+      // attempt to join voice channel
+      queueContruct.connection = await joinVoiceChannel({
+        channelId: voiceChannel.id,
+        guildId: voiceChannel.guild.id,
+        adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+      });
+
+      // Calling the play function to start a song
+      play(message.guild, queueContruct.songs[0]);
+    } catch(err) {
+      console.log(err);
+      queue.delete(message.guild.id);
+      return;
+    }
   } else {
     songQueue.songs.push(song);
-    console.log(songQueue.songs);
     return message.channel.send(`Now queueing: **${song.title}**`);
   }
 }
@@ -150,9 +161,14 @@ function play(guild, song) {
   songQueue.current = resource
 
   // start playing the song and connect to the output
-  player.play(resource);
-  songQueue.connection.subscribe(player)
-  songQueue.textChannel.send(`Now playing: **${song.title}**`);
+  try {
+    player.play(resource);
+    songQueue.connection.subscribe(player)
+    songQueue.textChannel.send(`Now playing: **${song.title}**`);
+  } catch (err) {
+    console.log(err);
+    throw err
+  }
 
   // on music ending
   player.on(AudioPlayerStatus.Idle, () => {
