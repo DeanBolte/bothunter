@@ -98,8 +98,7 @@ async function handleSong(message, songQueue) {
   });
   const raw = response.data.items[0].snippet.thumbnails.default.url;
   const data = raw.substring(raw.search("/vi/") + 4, raw.search("/default"));
-  const url = "https://www.youtube.com/watch?v=" + data
-  console.log(url);
+  const url = "https://www.youtube.com/watch?v=" + data;
 
   // grab song info from YouTube
   const songInfo = await ytdl.getInfo(url);
@@ -111,7 +110,6 @@ async function handleSong(message, songQueue) {
     views: songInfo.videoDetails.viewCount,
     description: songInfo.videoDetails.description,
   };
-  console.log(song.author);
 
   // add song to queue or start playing
   if (!songQueue) {
