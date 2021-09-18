@@ -1,10 +1,6 @@
 const Discord = require("discord.js");
-const ytdl = require('ytdl-core');
-require('dotenv').config();
-
 const { Client, Intents } = require('discord.js');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES] });
-
 const {
   AudioPlayerStatus,
   StreamType,
@@ -12,12 +8,12 @@ const {
   createAudioResource,
   joinVoiceChannel,
 } = require('@discordjs/voice');
+const ytdl = require('ytdl-core');
 
-const {
-  prefix
-} = require('./config.json');
+require('dotenv').config();
+const { prefix } = require('./config.json');
 
-
+// set up youtube api using the API KEY
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 if (!YOUTUBE_API_KEY) {
   throw new Error("No API key is provided");
@@ -28,6 +24,7 @@ const youtube = google.youtube({
   auth: YOUTUBE_API_KEY
 });
 
+// represents the queue of songs
 const queue = new Map();
 
 client.on("ready", () => {
@@ -42,6 +39,8 @@ client.on("messageCreate", msg => {
       || msg.content.startsWith(`${prefix}p`)) {
       if(msg.content.search(" ") >= 0) {
         handleSong(msg, songQueue);
+      } else {
+        msg.channel.send("Please add a url or search term after the play command.")
       }
       return;
     } else if (msg.content.startsWith(`${prefix}next`)
@@ -64,7 +63,7 @@ client.on("messageCreate", msg => {
 client.login(process.env.TOKEN);
 
 async function handleSong(message, songQueue) {
-  // get user input
+  // read user input
   const args = message.content.split(" ");
   const searchParam = message.content.substr(message.content.search(" "));
   console.log("searching for: " + searchParam + "...\n");
@@ -82,6 +81,7 @@ async function handleSong(message, songQueue) {
     );
   }
 
+  // get the url for the video via the youtube api
   let url = null;
   try {
     const response = await youtube.search.list({
@@ -101,7 +101,7 @@ async function handleSong(message, songQueue) {
   }
   console.log("Found: " + url + "\n");
 
-  // grab song info from YouTube
+  // use ytdl to get info on the youtube video
   const songInfo = await ytdl.getInfo(url);
   const song = {
     title: songInfo.videoDetails.title,
@@ -114,7 +114,7 @@ async function handleSong(message, songQueue) {
 
   // add song to queue or start playing
   if (!songQueue) {
-    // Creating the contract for our queue
+    // represents the data for a guild contract
     const queueContruct = {
       textChannel: message.channel,
       voiceChannel: voiceChannel,
@@ -122,9 +122,9 @@ async function handleSong(message, songQueue) {
       current: null,
       songs: [],
     };
-    // Setting the queue using our contract
+    // adding the queue contract to the queue map
     queue.set(message.guild.id, queueContruct);
-    // Pushing the song to our songs array
+    // add song to queue
     queueContruct.songs.push(song);
 
     try {
@@ -135,7 +135,7 @@ async function handleSong(message, songQueue) {
         adapterCreator: voiceChannel.guild.voiceAdapterCreator,
       });
 
-      // Calling the play function to start a song
+      // play the first song in the queue
       play(message.guild, queueContruct.songs[0]);
     } catch(err) {
       console.log(err);
@@ -143,12 +143,20 @@ async function handleSong(message, songQueue) {
       return;
     }
   } else {
+    // if there is already a song playing then queue the song
     songQueue.songs.push(song);
     return message.channel.send(`Now queueing: **${song.title}**`);
   }
 }
 
 function play(guild, song) {
+  // recursive exit requirement
+  if(!song) {
+    // leave if there is no song to play
+    songQueue.connection.destroy();
+    queue.delete(guild.id);
+  }
+  
   // get queue
   const songQueue = queue.get(guild.id);
 
@@ -157,10 +165,10 @@ function play(guild, song) {
   const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
   const player = createAudioPlayer();
 
-  // save current song to queue data
+  // save current song resource to queue data
   songQueue.current = resource
 
-  // start playing the song and connect to the output
+  // start playing the song in the voice channel
   try {
     player.play(resource);
     songQueue.connection.subscribe(player)
@@ -173,16 +181,11 @@ function play(guild, song) {
   // on music ending
   player.on(AudioPlayerStatus.Idle, () => {
     songQueue.songs.shift();
-    if(songQueue.songs[0]) {
-      play(guild, songQueue.songs[0]);
-    } else {
-      // leave if there is no song to play
-      songQueue.connection.destroy();
-      queue.delete(guild.id);
-    }
+    play(guild, songQueue.songs[0]);
   });
 }
 
+// skip to next song in queue
 function next(message, songQueue) {
   if (!songQueue) {
     return message.channel.send("There is nothing in the queue.");
@@ -191,6 +194,7 @@ function next(message, songQueue) {
   play(message.guild, songQueue.songs[0]);
 }
 
+// end queue contract
 function stop(message, songQueue) {
   message.channel.send("Ending music session...");
   songQueue.connection.destroy();
