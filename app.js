@@ -105,8 +105,13 @@ async function handleSong(message, songQueue) {
   const songInfo = await ytdl.getInfo(url);
   const song = {
     title: songInfo.videoDetails.title,
+    author: songInfo.videoDetails.author.name,
     url: songInfo.videoDetails.video_url,
+    length: songInfo.videoDetails.lengthSeconds,
+    views: songInfo.videoDetails.viewCount,
+    description: songInfo.videoDetails.description,
   };
+  console.log(song.author);
 
   // add song to queue or start playing
   if (!songQueue) {
@@ -115,9 +120,8 @@ async function handleSong(message, songQueue) {
       textChannel: message.channel,
       voiceChannel: voiceChannel,
       connection: null,
+      current: null,
       songs: [],
-      volume: 5,
-      playing: true,
     };
     // Setting the queue using our contract
     queue.set(message.guild.id, queueContruct);
@@ -143,6 +147,9 @@ function play(guild, song) {
   const stream = ytdl(song.url, { filter: 'audioonly' });
   const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
   const player = createAudioPlayer();
+
+  // save current song to queue data
+  songQueue.current = resource
 
   // start playing the song and connect to the output
   player.play(resource);
@@ -181,10 +188,35 @@ function showSong(message, songQueue) {
   if (!songQueue) {
     return message.channel.send("There is nothing in the queue.");
   }
+  // get time info
+  let elapsed = secondsToTimeString(songQueue.current.playbackDuration * 0.001);
+  let duration = secondsToTimeString(songQueue.songs[0].length);
+
+  // get video info
+  let description = songQueue.songs[0].description;
+  let author = songQueue.songs[0].author;
+  let views = songQueue.songs[0].views;
 
   message.channel.send(
-    `Currently playing: **${songQueue.songs[0].title}**`
+    `Currently playing: **${songQueue.songs[0].title}**\n` +
+    `${elapsed} / ${duration}\n\n` +
+    `Author: ${author}\n` +
+    `Views: ${views}\n` +
+    `*Description:*\n ${description}\n`    
   );
+}
+
+function secondsToTimeString(time) {
+  // break time into component parts
+  let hours = Math.floor(time / 3600);
+  let minutes = Math.floor((time / 60) % 60);
+  let seconds = Math.floor(time - (hours * 3600) - (minutes * 60));
+
+  // add 0 to numbers if not two digits wide
+  if (hours   < 10) {hours   = "0"+hours;}
+  if (minutes < 10) {minutes = "0"+minutes;}
+  if (seconds < 10) {seconds = "0"+seconds;}
+  return (hours+":"+minutes+":"+seconds);
 }
 
 function sendHelp(message) {
