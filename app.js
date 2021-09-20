@@ -150,15 +150,15 @@ async function handleSong(message, songQueue) {
 }
 
 function play(guild, song) {
+  // get queue
+  const songQueue = queue.get(guild.id);
+  
   // recursive exit requirement
   if(!song) {
     // leave if there is no song to play
     songQueue.connection.destroy();
     queue.delete(guild.id);
   }
-  
-  // get queue
-  const songQueue = queue.get(guild.id);
 
   // create resources for music player
   const stream = ytdl(song.url, { filter: 'audioonly' });
