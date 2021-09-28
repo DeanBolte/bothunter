@@ -8,7 +8,9 @@ const {
   createAudioResource,
   joinVoiceChannel,
 } = require('@discordjs/voice');
-const ytdl = require('ytdl-core');
+const {getInfo} = require('ytdl-core');
+const youtubedl = require('youtube-dl-exec');
+const fs = require('fs');
 
 require('dotenv').config();
 const { prefix } = require('./config.json');
@@ -102,7 +104,7 @@ async function handleSong(message, songQueue) {
   console.log("Found: " + url + "\n");
 
   // use ytdl to get info on the youtube video
-  const songInfo = await ytdl.getInfo(url);
+  const songInfo = await getInfo(url);
   const song = {
     title: songInfo.videoDetails.title,
     author: songInfo.videoDetails.author.name,
@@ -158,10 +160,23 @@ function play(guild, song) {
     // leave if there is no song to play
     songQueue.connection.destroy();
     queue.delete(guild.id);
+    return;
   }
 
   // create resources for music player
-  const stream = ytdl(song.url, { filter: 'audioonly' });
+  const process = youtubedl.raw(
+    song.url, 
+    {
+      output: "downloads/%(extractor)s-%(id)s-%(title)s.%(ext)s",
+      quiet: true,
+      noPlaylist: true,
+      noWarnings: true,
+      noCallHome: true,
+      f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
+    },
+    { stdio: ['ignore', 'pipe', 'ignore'] },
+  );
+  const stream = process.stdout;
   const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
   const player = createAudioPlayer();
 
@@ -183,6 +198,9 @@ function play(guild, song) {
     songQueue.songs.shift();
     play(guild, songQueue.songs[0]);
   });
+
+  // log error in audioplayer
+  player.on("error", console.error);
 }
 
 // skip to next song in queue

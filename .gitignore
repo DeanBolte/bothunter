@@ -4,3 +4,6 @@
 # do not store node_modules
 node_modules/
 ffmpeg/
+
+# ignore downloads
+downloads/
